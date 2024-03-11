@@ -1,5 +1,6 @@
 import { resolve, extname, join, basename, dirname } from "pathe";
 import fse from "fs-extra";
+import escapeStringRegexp from 'escape-string-regexp'
 import { copyFileWithStream } from "./utils/fs";
 import {
   InputFile,
@@ -61,6 +62,40 @@ export async function mkdist(
   const outputs: OutputFile[] = [];
   for (const file of files) {
     outputs.push(...((await loadFile(file)) || []));
+  }
+
+  // Resolve aliases
+  for (const output of outputs.filter(
+    (o) => o.extension === ".mjs" || o.extension === ".js",
+  )) {
+    const find = escapeStringRegexp('~/')
+    output.contents = output.contents
+      // Resolve require statements
+      .replace(
+        new RegExp(`require\\((["'])${find}(.*)(["'])\\)`, 'g'),
+      (_, head, id, tail) =>
+        "require(" +
+        head +
+        resolve(options.rootDir, options.srcDir || "src", id) +
+        tail +
+        ")",
+      )
+      // Resolve import statements
+      .replace(
+        new RegExp(`(import|export)(\\s+(?:.+|{[\\s\\w,]+})\\s+from\\s+["'])${find}(.*)(["'])`, 'g'),
+        (_, type, head, id, tail) =>
+          type + head + resolve(options.rootDir, options.srcDir || "src", id) + tail,
+      )
+      // Resolve dynamic import
+      .replace(
+        new RegExp(`import\\((["'])${find}(.*)(["'])\\)`, 'g'),
+        (_, head, id, tail) =>
+          "import(" +
+          head +
+          resolve(options.rootDir, options.srcDir || "src", id) +
+          tail +
+          ")",
+      );
   }
 
   // Normalize output extensions

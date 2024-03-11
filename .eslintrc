@@ -1,6 +1,6 @@
 {
   "extends": [
-    "eslint-config-unjs"
+    // "eslint-config-unjs"
   ],
   "rules": {
     "indent": 0,

@@ -1,4 +1,4 @@
-import bar from "./bar";
+import bar from "~/bar";
 
 // eslint-disable-next-line @typescript-eslint/no-inferrable-types
 const foo: string = "foo";
